@@ -1,8 +1,8 @@
 "use client"
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { BIBLE_BOOKS } from '@/lib/bible-data'
-import { loadProgress, saveProgress, type ProgressMap } from '@/lib/storage'
+import { useProgress } from '@/hooks/useProgress'
 import { ArrowLeft, Check } from 'lucide-react'
 import { ProgressBar } from '@/components/ProgressBar'
 
@@ -10,29 +10,15 @@ export default function BookPage() {
   const params = useParams()
   const router = useRouter()
   const bookId = params.id as string
-  const [books, setBooks] = useState<ProgressMap>({})
+  
+  const { 
+    progress: books, 
+    isLoading, 
+    isServerless, 
+    saveChapterProgress 
+  } = useProgress()
 
   const book = BIBLE_BOOKS.find(b => b.id === bookId)
-
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const progress = await loadProgress()
-        setBooks(progress.books)
-      } catch (error) {
-        console.error('Erro ao carregar progresso:', error)
-      }
-    }
-    loadData()
-  }, [])
-
-  useEffect(() => {
-    if (Object.keys(books).length > 0) {
-      saveProgress({ books }).catch(error => {
-        console.error('Erro ao salvar progresso:', error)
-      })
-    }
-  }, [books])
 
   if (!book) {
     return (
@@ -53,16 +39,38 @@ export default function BookPage() {
   const readChapters = books[bookId]?.filter(Boolean).length ?? 0
   const progress = book.chapters ? (readChapters / book.chapters) * 100 : 0
 
-  function toggleChapter(index: number) {
-    setBooks((prev) => {
-      const arr = prev[bookId] ? [...prev[bookId]] : []
-      arr[index] = !arr[index]
-      return { ...prev, [bookId]: arr }
-    })
+  async function toggleChapter(index: number) {
+    const currentChapters = books[bookId] || []
+    const newValue = !currentChapters[index]
+    await saveChapterProgress(bookId, index, newValue)
+  }
+
+  if (isLoading) {
+    return (
+      <main className="py-6">
+        <div className="flex items-center justify-center min-h-[200px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)] mx-auto mb-2"></div>
+            <p className="text-[var(--text-secondary)]">Carregando progresso...</p>
+          </div>
+        </div>
+      </main>
+    )
   }
 
   return (
     <main className="py-6">
+      {isServerless && (
+        <div className="card p-3 mb-4 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800">
+          <div className="flex items-center gap-2">
+            <span className="text-yellow-600 dark:text-yellow-400">ℹ️</span>
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              Modo offline ativo - Seus dados estão sendo salvos localmente no dispositivo.
+            </p>
+          </div>
+        </div>
+      )}
+      
       <div className="mb-6">
         <button 
           onClick={() => router.push('/')}

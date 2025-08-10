@@ -5,13 +5,18 @@ export async function GET() {
   try {
     const db = getDatabase()
     const progress = db.loadAllProgress()
-    return NextResponse.json({ books: progress })
+    return NextResponse.json({ 
+      books: progress,
+      serverless: process.env.VERCEL ? true : false
+    })
   } catch (error) {
     console.error('Erro ao carregar progresso:', error)
-    return NextResponse.json(
-      { error: 'Erro ao carregar progresso' },
-      { status: 500 }
-    )
+    // Em caso de erro, retornar estrutura vazia para o cliente usar localStorage
+    return NextResponse.json({ 
+      books: {},
+      serverless: true,
+      error: 'Usando armazenamento local'
+    })
   }
 }
 
@@ -40,13 +45,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ 
+      success: true,
+      serverless: process.env.VERCEL ? true : false
+    })
   } catch (error) {
     console.error('Erro ao salvar progresso:', error)
-    return NextResponse.json(
-      { error: 'Erro ao salvar progresso' },
-      { status: 500 }
-    )
+    // Em ambiente serverless, aceitar o erro e deixar o cliente usar localStorage
+    return NextResponse.json({ 
+      success: false,
+      serverless: true,
+      error: 'Dados salvos localmente'
+    })
   }
 }
 

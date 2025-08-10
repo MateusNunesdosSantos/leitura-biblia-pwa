@@ -1,37 +1,23 @@
 "use client"
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { BIBLE_BOOKS, getTestamentBooks, getTotalChapters, getTotalChaptersByTestament } from '@/lib/bible-data'
-import { loadProgress, saveProgress, resetProgress, type ProgressMap } from '@/lib/storage'
+import { useProgress } from '@/hooks/useProgress'
 import { Header } from '@/components/Header'
 import { BookCard } from '@/components/BookCard'
 import { ProgressBar } from '@/components/ProgressBar'
 
 export default function HomePage() {
   const [tab, setTab] = useState<'old' | 'new'>('old')
-  const [books, setBooks] = useState<ProgressMap>({})
   const [searchTerm, setSearchTerm] = useState('')
-
-  // carregar progresso da API
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const state = await loadProgress()
-        setBooks(state.books)
-      } catch (error) {
-        console.error('Erro ao carregar progresso:', error)
-      }
-    }
-    loadData()
-  }, [])
-
-  // salvar progresso quando mudar
-  useEffect(() => {
-    if (Object.keys(books).length > 0) {
-      saveProgress({ books }).catch(error => {
-        console.error('Erro ao salvar progresso:', error)
-      })
-    }
-  }, [books])
+  
+  // Usar o novo hook de progresso
+  const { 
+    progress: books, 
+    isLoading, 
+    isServerless, 
+    saveChapterProgress, 
+    resetAllProgress 
+  } = useProgress()
 
   const allTotal = useMemo(() => getTotalChapters(), [])
 
@@ -55,26 +41,47 @@ export default function HomePage() {
     return { total, read, pct: total ? read / total : 0 }
   }, [tab, books, shownBooks])
 
-  function toggleChapter(bookId: string, index: number) {
-    setBooks((prev) => {
-      const arr = prev[bookId] ? [...prev[bookId]] : []
-      arr[index] = !arr[index]
-      return { ...prev, [bookId]: arr }
-    })
+  async function toggleChapter(bookId: string, index: number) {
+    const currentChapters = books[bookId] || []
+    const newValue = !currentChapters[index]
+    await saveChapterProgress(bookId, index, newValue)
   }
 
   async function handleReset() {
     try {
-      await resetProgress()
-      setBooks({})
+      await resetAllProgress()
     } catch (error) {
       console.error('Erro ao resetar progresso:', error)
     }
   }
 
+  if (isLoading) {
+    return (
+      <main className="py-3 sm:py-6">
+        <div className="flex items-center justify-center min-h-[200px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)] mx-auto mb-2"></div>
+            <p className="text-[var(--text-secondary)]">Carregando progresso...</p>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
   return (
     <main className="py-3 sm:py-6">
       <Header onReset={handleReset} />
+      
+      {isServerless && (
+        <div className="card p-3 mb-4 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800">
+          <div className="flex items-center gap-2">
+            <span className="text-yellow-600 dark:text-yellow-400">ℹ️</span>
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              Modo offline ativo - Seus dados estão sendo salvos localmente no dispositivo.
+            </p>
+          </div>
+        </div>
+      )}
 
       <section className="card p-4 mb-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
