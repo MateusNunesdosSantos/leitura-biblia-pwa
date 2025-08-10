@@ -1,0 +1,33 @@
+{
+  "name": "leitura-biblia",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"tailwindcss -i ./app/globals.css -o ./app/tailwind.css --watch\" \"next dev\"",
+    "build": "tailwindcss -i ./app/globals.css -o ./app/tailwind.css && next build",
+    "build:pwa": "cross-env NODE_ENV=production npm run build",
+    "start": "next start",
+    "start:prod": "cross-env NODE_ENV=production next start -p 3002",
+    "lint": "next lint",
+    "analyze": "cross-env ANALYZE=true npm run build"
+  },
+  "dependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.2.0",
+    "lucide-react": "^0.298.0",
+    "next": "14.0.4",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "concurrently": "^8.2.2",
+    "cross-env": "^10.0.0",
+    "eslint": "^8",
+    "eslint-config-next": "14.0.4",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5"
+  }
+}
