@@ -29,6 +29,7 @@ export class ClientStorageManager {
         progress,
         timestamp: new Date().toISOString()
       }
+      
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
     } catch (error) {
       console.error('Erro ao salvar no localStorage:', error)
@@ -47,19 +48,32 @@ export class ClientStorageManager {
       return data.progress || {}
     } catch (error) {
       console.error('Erro ao carregar do localStorage:', error)
+      // Limpar dados corrompidos
+      localStorage.removeItem(STORAGE_KEY)
       return {}
     }
   }
 
   // Salvar progresso de um capítulo específico
   saveChapterProgress(bookId: string, chapterIndex: number, isRead: boolean): void {
+    if (!this.isClient) return
+    
     const currentProgress = this.loadProgress()
     
+    // Garantir que o array do livro existe
     if (!currentProgress[bookId]) {
       currentProgress[bookId] = []
     }
     
+    // Garantir que o array tem o tamanho necessário
+    while (currentProgress[bookId].length <= chapterIndex) {
+      currentProgress[bookId].push(false)
+    }
+    
+    // Definir o valor do capítulo
     currentProgress[bookId][chapterIndex] = isRead
+    
+    // Salvar imediatamente
     this.saveProgress(currentProgress)
   }
 
